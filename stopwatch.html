@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Stopwatch</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        .stopwatch-container {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .display {
+            font-family: 'Courier New', monospace;
+            font-size: 3.5rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 1.5rem;
+            background-color: #343a40;
+            color: white;
+        }
+        .lap-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .lap-item {
+            border-bottom: 1px solid #dee2e6;
+            padding: 0.75rem 1.25rem;
+        }
+        .lap-item:last-child {
+            border-bottom: none;
+        }
+        .lap-number {
+            font-weight: bold;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="stopwatch-container">
+            <div class="display" id="display">00:00:00.00</div>
+            
+            <div class="p-4">
+                <div class="d-flex justify-content-center gap-3 mb-4">
+                    <button id="startBtn" class="btn btn-success btn-lg px-4">
+                        <i class="bi bi-play-fill"></i> Start
+                    </button>
+                    <button id="pauseBtn" class="btn btn-warning btn-lg px-4" disabled>
+                        <i class="bi bi-pause-fill"></i> Pause
+                    </button>
+                    <button id="resetBtn" class="btn btn-danger btn-lg px-4" disabled>
+                        <i class="bi bi-stop-fill"></i> Reset
+                    </button>
+                </div>
+                
+                <div class="d-flex justify-content-center gap-3 mb-4">
+                    <button id="lapBtn" class="btn btn-primary btn-lg px-4" disabled>
+                        <i class="bi bi-flag-fill"></i> Lap
+                    </button>
+                </div>
+                
+                <div class="lap-list-container">
+                    <h5 class="text-center mb-3">Lap Times</h5>
+                    <div class="lap-list bg-light" id="lapList">
+                        <!-- Lap times will appear here -->
+                        <div class="text-center py-3 text-muted">No lap times recorded</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Stopwatch variables
+        let startTime;
+        let elapsedTime = 0;
+        let timerInterval;
+        let isRunning = false;
+        let lapCount = 0;
+
+        // DOM elements
+        const display = document.getElementById('display');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const lapBtn = document.getElementById('lapBtn');
+        const lapList = document.getElementById('lapList');
+
+        // Format time (hh:mm:ss.ms)
+        function formatTime(time) {
+            const date = new Date(time);
+            const hours = date.getUTCHours().toString().padStart(2, '0');
+            const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+            const seconds = date.getUTCSeconds().toString().padStart(2, '0');
+            const milliseconds = Math.floor(date.getUTCMilliseconds() / 10).toString().padStart(2, '0');
+            
+            return `${hours}:${minutes}:${seconds}.${milliseconds}`;
+        }
+
+        // Update the display
+        function updateDisplay() {
+            display.textContent = formatTime(elapsedTime);
+        }
+
+        // Start the stopwatch
+        function start() {
+            if (!isRunning) {
+                startTime = Date.now() - elapsedTime;
+                timerInterval = setInterval(function() {
+                    elapsedTime = Date.now() - startTime;
+                    updateDisplay();
+                }, 10);
+                isRunning = true;
+                
+                startBtn.disabled = true;
+                pauseBtn.disabled = false;
+                resetBtn.disabled = false;
+                lapBtn.disabled = false;
+            }
+        }
+
+        // Pause the stopwatch
+        function pause() {
+            if (isRunning) {
+                clearInterval(timerInterval);
+                isRunning = false;
+                
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+            }
+        }
+
+        // Reset the stopwatch
+        function reset() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            elapsedTime = 0;
+            lapCount = 0;
+            updateDisplay();
+            
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            resetBtn.disabled = true;
+            lapBtn.disabled = true;
+            
+            // Clear lap list
+            lapList.innerHTML = '<div class="text-center py-3 text-muted">No lap times recorded</div>';
+        }
+
+        // Record a lap time
+        function lap() {
+            if (isRunning) {
+                lapCount++;
+                const lapTime = formatTime(elapsedTime);
+                
+                // Remove the "no laps" message if it's the first lap
+                if (lapCount === 1) {
+                    lapList.innerHTML = '';
+                }
+                
+                // Create lap item
+                const lapItem = document.createElement('div');
+                lapItem.className = 'lap-item d-flex justify-content-between';
+                lapItem.innerHTML = `
+                    <span class="lap-number">Lap ${lapCount}</span>
+                    <span class="lap-time">${lapTime}</span>
+                `;
+                
+                // Add to the top of the list
+                lapList.insertBefore(lapItem, lapList.firstChild);
+            }
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', start);
+        pauseBtn.addEventListener('click', pause);
+        resetBtn.addEventListener('click', reset);
+        lapBtn.addEventListener('click', lap);
+    </script>
+</body>
+</html>
